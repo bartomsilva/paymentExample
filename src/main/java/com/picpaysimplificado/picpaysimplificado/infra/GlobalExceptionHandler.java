@@ -20,7 +20,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(ex.getReason());
     }
 
-
     @ExceptionHandler(UnAuthorizedException.class)
     public ResponseEntity<?> handleUnAuthorizedException(UnAuthorizedException ex) {
         return ResponseEntity.status(ex.getStatusCode()).body(ex.getReason());
@@ -38,6 +37,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno no servidor.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno no servidor."+Exception.class);
     }
 }
