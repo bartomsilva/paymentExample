@@ -3,7 +3,10 @@ package com.picpaysimplificado.picpaysimplificado.services;
 import com.picpaysimplificado.picpaysimplificado.domain.user.UserType;
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.UserDTO;
+import com.picpaysimplificado.picpaysimplificado.infra.NotFoundException;
 import com.picpaysimplificado.picpaysimplificado.repositories.UserRepository;
+import com.picpaysimplificado.picpaysimplificado.infra.BadRequestException; // Alteração aqui
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +22,11 @@ public class UserService {
     public void validTransaction(User user, BigDecimal amount) throws Exception {
 
         if(user.getUsertype() == UserType.MERCHANT){
-            throw new Exception("este usuário não pode efetuar trasações.");
+            throw new BadRequestException("este usuário não pode efetuar trasações.");
         }
 
         if(user.getBalance().compareTo(amount)<0){
-            throw new Exception("saldo insulficiente");
+            throw new BadRequestException("saldo insulficiente");
 
         }
     }
@@ -31,7 +34,7 @@ public class UserService {
     public User findUserById(Long id) throws Exception {
         return this.repository
                 .findUserById(id)
-                .orElseThrow(()-> new Exception("usuário não localizado."));
+                .orElseThrow(()-> new NotFoundException("usuário não localizado."));
     }
 
     public User createUser(UserDTO data){
@@ -40,12 +43,13 @@ public class UserService {
         return newUser;
     }
 
-    public void saveUser(User user) {
-        this.repository.save(user);
+    public User saveUser(User user) {
+        return this.repository.save(user);
     }
 
     public List<User> getAllUsers(){
         return this.repository.findAll();
     }
+
 
 }
