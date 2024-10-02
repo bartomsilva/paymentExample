@@ -3,10 +3,12 @@ package com.picpaysimplificado.picpaysimplificado.services;
 import com.picpaysimplificado.picpaysimplificado.domain.transaction.Transaction;
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.TransactionDTO;
+import com.picpaysimplificado.picpaysimplificado.infra.ServiceUnavailableException;
+import com.picpaysimplificado.picpaysimplificado.infra.UnAuthorizedException;
 import com.picpaysimplificado.picpaysimplificado.repositories.TransactionRepository;
 import jakarta.transaction.Transactional;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -27,56 +29,44 @@ public class TransactionService {
     @Autowired
     RestTemplate restTemplate;
 
+    @Autowired
+    NotificationService notificationService;
+
+    @Autowired
+    AuthorizationService authorizationService;
+
     @Transactional
-    public void createTransaction(TransactionDTO transaction) throws Exception {
-        User sender = this.userService.findUserById(transaction.senderId().getId());
-        User receiver = this.userService.findUserById(transaction.receiverId().getId());
+    public Transaction createTransaction(TransactionDTO transaction) throws Exception {
+
+        User sender = this.userService.findUserById(transaction.senderId());
+        User receiver = this.userService.findUserById(transaction.receiverId());
         this.userService.validTransaction(sender, transaction.value());
+        this.authorizationService.authorizeTransaction(sender, transaction.value());
 
-        boolean isAuthorized = this.authorizeTransaction(sender, transaction.value());
-        if(!isAuthorized){
-            throw new Exception("Transação não autorizada.");
-        }
-
+        // nova transação
         Transaction newTransaction = new Transaction();
         newTransaction.setAmount(transaction.value());
         newTransaction.setSender(sender);
         newTransaction.setReceiver(receiver);
         newTransaction.setTimestamp(LocalDateTime.now());
 
+        // Atualizar saldos
         sender.setBalance(sender.getBalance().subtract(transaction.value()));
-        receiver.setBalance(sender.getBalance().add(transaction.value()));
+        receiver.setBalance(receiver.getBalance().add(transaction.value()));  // Ajuste aqui
 
+        // Salvar transação e atualizar saldo dos usuários
         this.repository.save(newTransaction);
         this.userService.saveUser(sender);
         this.userService.saveUser(receiver);
 
-    }
-
-    private boolean authorizeTransaction(User sender, BigDecimal value) throws Exception {
-
-        // requisição no link indicado
-        ResponseEntity<Map> authorizationResponse = restTemplate.getForEntity("https://util.devi.tools/api/v2/authorize", Map.class);
-
-        // extrair corpo da resposta
-        Map responseBody = authorizationResponse.getBody();
-
-        if(responseBody==null) {
-            throw new Exception("o servidor não respondeu, tente novamente mais tarde.");
+        // Enviar notificações
+        try {
+            this.notificationService.senderNotification(sender, "Transação realizada com sucesso.");
+            this.notificationService.senderNotification(receiver, "Transação recebida com sucesso.");
+        } catch (Exception e) {
+            throw new ServiceUnavailableException("Falha ao enviar notificações. Transação será revertida.");
         }
-
-        // extrair o status
-        String status = (String) responseBody.get("status");
-
-        // extrair data
-        Map<String, Object> dataMap = (Map<String, Object>) responseBody.get("data");
-
-        if(dataMap==null){
-            throw new Exception("falha na transação.");
-        }
-
-        Boolean authorization = (Boolean) dataMap.get("authorization");
-
-        return status.equals("success") && authorization;
+        // retornar a transação
+        return newTransaction;
     }
 }
