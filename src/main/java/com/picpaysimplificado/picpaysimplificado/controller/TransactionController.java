@@ -18,6 +18,8 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<Transaction> createTransaction(@RequestBody TransactionDTO data) throws Exception {
 
+        // TO-DO 
+        // referente aos dados do usuário retornar apenas os id's dos envovidos, data e valor da transação.
         Transaction newTransaction = this.transactionService.createTransaction(data);
         return new ResponseEntity<>(newTransaction, HttpStatus.CREATED);
    }
