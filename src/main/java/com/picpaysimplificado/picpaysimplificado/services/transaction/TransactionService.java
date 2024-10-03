@@ -1,21 +1,19 @@
-package com.picpaysimplificado.picpaysimplificado.services;
+package com.picpaysimplificado.picpaysimplificado.services.transaction;
 
 import com.picpaysimplificado.picpaysimplificado.domain.transaction.Transaction;
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.TransactionDTO;
 import com.picpaysimplificado.picpaysimplificado.infra.ServiceUnavailableException;
-import com.picpaysimplificado.picpaysimplificado.infra.UnAuthorizedException;
 import com.picpaysimplificado.picpaysimplificado.repositories.TransactionRepository;
+import com.picpaysimplificado.picpaysimplificado.services.AuthorizationService;
+import com.picpaysimplificado.picpaysimplificado.services.notification.NotificationService;
+import com.picpaysimplificado.picpaysimplificado.services.user.UserService;
 import jakarta.transaction.Transactional;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Service
 public class TransactionService {
@@ -35,7 +33,6 @@ public class TransactionService {
     @Autowired
     AuthorizationService authorizationService;
 
-    @Transactional
     public Transaction createTransaction(TransactionDTO transaction) throws Exception {
 
         User sender = this.userService.findUserById(transaction.senderId());
@@ -54,19 +51,28 @@ public class TransactionService {
         sender.setBalance(sender.getBalance().subtract(transaction.value()));
         receiver.setBalance(receiver.getBalance().add(transaction.value()));  // Ajuste aqui
 
-        // Salvar transação e atualizar saldo dos usuários
-        this.repository.save(newTransaction);
-        this.userService.saveUser(sender);
-        this.userService.saveUser(receiver);
+        try{
+            this.saveTransaction(newTransaction, sender, receiver);
+        } catch(Exception e){
+            throw new ServiceUnavailableException("falha na transação");
+        }
 
         // Enviar notificações
         try {
             this.notificationService.senderNotification(sender, "Transação realizada com sucesso.");
             this.notificationService.senderNotification(receiver, "Transação recebida com sucesso.");
         } catch (Exception e) {
-            throw new ServiceUnavailableException("Falha ao enviar notificações. Transação será revertida.");
+            throw new ServiceUnavailableException("Transação concluída, mensagem de confirmação será enviada em breve.");
         }
         // retornar a transação
         return newTransaction;
+    }
+
+    @Transactional
+    public void saveTransaction(Transaction newTransaction, User sender, User receiver) {
+        // Salvar transação e atualizar saldo dos usuários
+        this.repository.save(newTransaction);
+        this.userService.saveUser(sender);
+        this.userService.saveUser(receiver);
     }
 }

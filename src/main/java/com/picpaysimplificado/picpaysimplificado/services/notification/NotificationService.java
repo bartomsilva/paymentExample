@@ -1,4 +1,4 @@
-package com.picpaysimplificado.picpaysimplificado.services;
+package com.picpaysimplificado.picpaysimplificado.services.notification;
 
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.NotificationDTO;

@@ -4,7 +4,7 @@ import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.UserDTO;
 import com.picpaysimplificado.picpaysimplificado.dtos.UserResponseDTO;
 import com.picpaysimplificado.picpaysimplificado.infra.ConflictException;
-import com.picpaysimplificado.picpaysimplificado.services.UserService;
+import com.picpaysimplificado.picpaysimplificado.services.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

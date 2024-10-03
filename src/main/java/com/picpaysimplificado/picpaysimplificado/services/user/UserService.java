@@ -1,4 +1,4 @@
-package com.picpaysimplificado.picpaysimplificado.services;
+package com.picpaysimplificado.picpaysimplificado.services.user;
 
 import com.picpaysimplificado.picpaysimplificado.domain.user.UserType;
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
