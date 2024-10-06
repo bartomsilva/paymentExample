@@ -3,6 +3,7 @@ package com.picpaysimplificado.picpaysimplificado.services.transaction;
 import com.picpaysimplificado.picpaysimplificado.domain.transaction.Transaction;
 import com.picpaysimplificado.picpaysimplificado.domain.user.User;
 import com.picpaysimplificado.picpaysimplificado.dtos.TransactionDTO;
+import com.picpaysimplificado.picpaysimplificado.dtos.TransactionResponseDTO;
 import com.picpaysimplificado.picpaysimplificado.infra.ServiceUnavailableException;
 import com.picpaysimplificado.picpaysimplificado.repositories.TransactionRepository;
 import com.picpaysimplificado.picpaysimplificado.services.AuthorizationService;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransactionService {
@@ -33,7 +36,7 @@ public class TransactionService {
     @Autowired
     AuthorizationService authorizationService;
 
-    public Transaction createTransaction(TransactionDTO transaction) throws Exception {
+    public TransactionResponseDTO createTransaction(TransactionDTO transaction) throws Exception {
 
         User sender = this.userService.findUserById(transaction.senderId());
         User receiver = this.userService.findUserById(transaction.receiverId());
@@ -51,9 +54,9 @@ public class TransactionService {
         sender.setBalance(sender.getBalance().subtract(transaction.value()));
         receiver.setBalance(receiver.getBalance().add(transaction.value()));  // Ajuste aqui
 
-        try{
+        try {
             this.saveTransaction(newTransaction, sender, receiver);
-        } catch(Exception e){
+        } catch (Exception e) {
             throw new ServiceUnavailableException("falha na transação");
         }
 
@@ -62,10 +65,18 @@ public class TransactionService {
             this.notificationService.senderNotification(sender, "Transação realizada com sucesso.");
             this.notificationService.senderNotification(receiver, "Transação recebida com sucesso.");
         } catch (Exception e) {
-            throw new ServiceUnavailableException("Transação concluída, mensagem de confirmação será enviada em breve.");
+            //throw new ServiceUnavailableException("Transação concluída, mensagem de confirmação será enviada em breve.");
         }
         // retornar a transação
-        return newTransaction;
+        TransactionResponseDTO transactionResponse = new TransactionResponseDTO(
+                newTransaction);
+//        TransactionResponseDTO transactionResponse = new TransactionResponseDTO(
+//                newTransaction.getId(),
+//                newTransaction.getAmount(),
+//                newTransaction.getSender().getId(),
+//                newTransaction.getReceiver().getId(),
+//                newTransaction.getTimestamp());
+        return transactionResponse;
     }
 
     @Transactional
@@ -75,4 +86,9 @@ public class TransactionService {
         this.userService.saveUser(sender);
         this.userService.saveUser(receiver);
     }
+
+    public List<Transaction> getAllTransactions() {
+        return this.repository.findAll();
+    }
+
 }

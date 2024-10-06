@@ -24,7 +24,7 @@ public class AuthorizationService {
         try {
             authorizationResponse = restTemplate.getForEntity("https://util.devi.tools/api/v2/authorize", Map.class);
 
-        } catch( Exception e){
+        } catch (Exception e) {
             throw new ServiceUnavailableException("o servidor de autorização não respondeu");
         }
 
@@ -37,13 +37,13 @@ public class AuthorizationService {
         // Extrair status da resposta
         String status = (String) responseBody.get("status");
         if (!"success".equals(status)) {
-            throw new UnAuthorizedException("Falha na autorização da transação.");
+            throw new UnAuthorizedException("Falha na autorização da transação. "+status);
         }
 
         // Extrair dados da resposta
         Map<String, Object> dataMap = (Map<String, Object>) responseBody.get("data");
         if (dataMap == null || dataMap.get("authorization") == null) {
-            throw new UnAuthorizedException("Falha na transação.");
+            throw new UnAuthorizedException("Falha na autorização da transação.");
         }
 
         Boolean authorization = (Boolean) dataMap.get("authorization");
