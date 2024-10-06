@@ -26,5 +26,17 @@ public record UserResponseDTO(
                 user.getUsertype()
         ); // Chama o construtor padrão do record
     }
+    // Construtor que aceita personalizado
+    public UserResponseDTO(Long id, String firstName, String lastName, String email) {
+        this(
+                id,
+                firstName,
+                lastName,
+                null, // document ausente
+                BigDecimal.ZERO, // balance padrão como 0
+                email,
+                null // userType ausente
+        );
+    }
 }
 

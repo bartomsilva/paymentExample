@@ -13,4 +13,5 @@ public record UserDTO(
         String password,
         UserType userType
 ) {
+
 }
